@@ -25,7 +25,7 @@ import logging
 import os
 import pty
 import re
-import subprocess
+import subprocess  # nosec
 
 from argopt import argopt
 
@@ -51,7 +51,7 @@ def main():
     # Get compressed sizes
     zips = {}
     for fn in args.zipfiles:
-        info = subprocess.check_output(["7z", "l", fn]).strip()
+        info = subprocess.check_output(["7z", "l", fn]).strip()  # nosec
         finfo = RE_SCN.findall(info)  # size|compressed|name
 
         # builtin test: last line should be total sizes
@@ -77,7 +77,7 @@ def main():
               unit="B", unit_scale=True) as tall:
         for fn, fcomp in zips.items():
             md, sd = pty.openpty()
-            ex = subprocess.Popen(
+            ex = subprocess.Popen(  # nosec
                 cmd7zx + [fn],
                 bufsize=1,
                 stdout=md,  # subprocess.PIPE,

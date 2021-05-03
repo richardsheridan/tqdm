@@ -8,6 +8,7 @@ dependencies:
 - python=3
 - pip
 - ipykernel
+- ipywidgets
 - setuptools
 - setuptools_scm
 - toml
@@ -20,12 +21,15 @@ dependencies:
 - pytest-cov
 - pytest-timeout
 - pytest-asyncio  # [py>=3.7]
+- nbval
 - flake8
 - flake8-bugbear
 - flake8-comprehensions
 - coverage
 # extras
+- dask               # dask
 - matplotlib         # gui
+- nbstripout         # notebook editing
 - numpy              # pandas, keras, contrib.tenumerate
 - pandas
 - tensorflow         # keras

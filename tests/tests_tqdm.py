@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Advice: use repr(our_file.read()) to print the full output of tqdm
 # (else '\r' will replace the previous lines and you'll see only the latest.
+from __future__ import print_function
 
 import csv
 import os
@@ -621,6 +622,21 @@ def test_max_interval():
         t2.close()
 
 
+def test_delay():
+    """Test delay"""
+    timer = DiscreteTimer()
+    with closing(StringIO()) as our_file:
+        t = tqdm(total=2, file=our_file, leave=True, delay=3)
+        cpu_timify(t, timer)
+        timer.sleep(2)
+        t.update(1)
+        assert not our_file.getvalue()
+        timer.sleep(2)
+        t.update(1)
+        assert our_file.getvalue()
+        t.close()
+
+
 def test_min_iters():
     """Test miniters"""
     with closing(StringIO()) as our_file:
@@ -1172,6 +1188,18 @@ def test_unpause():
     assert r_before == r_after
 
 
+def test_disabled_unpause(capsys):
+    """Test disabled unpause"""
+    with tqdm(total=10, disable=True) as t:
+        t.update()
+        t.unpause()
+        t.update()
+        print(t)
+    out, err = capsys.readouterr()
+    assert not err
+    assert out == '  0%|          | 0/10 [00:00<?, ?it/s]\n'
+
+
 def test_reset():
     """Test resetting a bar for re-use"""
     with closing(StringIO()) as our_file:
@@ -1184,6 +1212,20 @@ def test_reset():
             t.update(10)
         assert '| 1/10' in our_file.getvalue()
         assert '| 10/12' in our_file.getvalue()
+
+
+def test_disabled_reset(capsys):
+    """Test disabled reset"""
+    with tqdm(total=10, disable=True) as t:
+        t.update(9)
+        t.reset()
+        t.update()
+        t.reset(total=12)
+        t.update(10)
+        print(t)
+    out, err = capsys.readouterr()
+    assert not err
+    assert out == '  0%|          | 0/12 [00:00<?, ?it/s]\n'
 
 
 @mark.skipif(nt_and_no_colorama, reason="Windows without colorama")
@@ -1425,7 +1467,7 @@ def test_clear():
 
 
 def test_clear_disabled():
-    """Test clearing bar display"""
+    """Test disabled clear"""
     with closing(StringIO()) as our_file:
         with tqdm(total=10, file=our_file, desc='pos0 bar', disable=True,
                   bar_format='{l_bar}') as t:
@@ -1454,8 +1496,19 @@ def test_refresh():
         assert after == [u'pos0 bar:  10%|', u'pos1 bar:  10%|']
 
 
+def test_disabled_repr(capsys):
+    """Test disabled repr"""
+    with tqdm(total=10, disable=True) as t:
+        str(t)
+        t.update()
+        print(t)
+    out, err = capsys.readouterr()
+    assert not err
+    assert out == '  0%|          | 0/10 [00:00<?, ?it/s]\n'
+
+
 def test_disabled_refresh():
-    """Test refresh bar display"""
+    """Test disabled refresh"""
     with closing(StringIO()) as our_file:
         with tqdm(total=10, file=our_file, desc='pos0 bar', disable=True,
                   bar_format='{l_bar}', mininterval=999, miniters=999) as t:
@@ -1685,8 +1738,14 @@ def test_file_redirection():
     with closing(StringIO()) as our_file:
         # Redirect stdout to tqdm.write()
         with std_out_err_redirect_tqdm(tqdm_file=our_file):
-            for _ in trange(3):
+            with tqdm(total=3) as pbar:
                 print("Such fun")
+                pbar.update(1)
+                print("Such", "fun")
+                pbar.update(1)
+                print("Such ", end="")
+                print("fun")
+                pbar.update(1)
         res = our_file.getvalue()
         assert res.count("Such fun\n") == 3
         assert "0/3" in res

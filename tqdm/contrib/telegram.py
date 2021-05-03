@@ -6,8 +6,7 @@ Usage:
 >>> for i in trange(10, token='{token}', chat_id='{chat_id}'):
 ...     ...
 
-![screenshot](
-https://raw.githubusercontent.com/tqdm/img/src/screenshot-telegram.gif)
+![screenshot](https://img.tqdm.ml/screenshot-telegram.gif)
 """
 from __future__ import absolute_import
 
@@ -91,9 +90,11 @@ class tqdm_telegram(tqdm_auto):
 
         See `tqdm.auto.tqdm.__init__` for other parameters.
         """
-        kwargs = kwargs.copy()
-        self.tgio = TelegramIO(kwargs.pop('token', getenv('TQDM_TELEGRAM_TOKEN')),
-                               kwargs.pop('chat_id', getenv('TQDM_TELEGRAM_CHAT_ID')))
+        if not kwargs.get('disable'):
+            kwargs = kwargs.copy()
+            self.tgio = TelegramIO(
+                kwargs.pop('token', getenv('TQDM_TELEGRAM_TOKEN')),
+                kwargs.pop('chat_id', getenv('TQDM_TELEGRAM_CHAT_ID')))
         super(tqdm_telegram, self).__init__(*args, **kwargs)
 
     def display(self, **kwargs):
@@ -108,7 +109,8 @@ class tqdm_telegram(tqdm_auto):
 
     def clear(self, *args, **kwargs):
         super(tqdm_telegram, self).clear(*args, **kwargs)
-        self.tgio.write("")
+        if not self.disable:
+            self.tgio.write("")
 
 
 def ttgrange(*args, **kwargs):

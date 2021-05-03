@@ -140,7 +140,7 @@ Changelog
 The list of all changes is available either on GitHub's Releases:
 |GitHub-Status|, on the
 `wiki <https://github.com/tqdm/tqdm/wiki/Releases>`__, or on the
-`website <https://tqdm.github.io/releases/>`__.
+`website <https://tqdm.github.io/releases>`__.
 
 
 Usage
@@ -462,6 +462,8 @@ Parameters
     The fallback is 20.
 * colour  : str, optional  
     Bar colour (e.g. 'green', '#00ff00').
+* delay  : float, optional  
+    Don't display until [default: 0] seconds have elapsed.
 
 Extra CLI Options
 ~~~~~~~~~~~~~~~~~
@@ -677,7 +679,10 @@ Submodules
         """`rich.progress` version."""
 
     class tqdm.keras.TqdmCallback(keras.callbacks.Callback):
-        """`keras` callback for epoch and batch progress."""
+        """Keras callback for epoch and batch progress."""
+
+    class tqdm.dask.TqdmCallback(dask.callbacks.Callback):
+        """Dask callback for task progress."""
 
 
 ``contrib``
@@ -687,8 +692,8 @@ The ``tqdm.contrib`` package also contains experimental modules:
 
 - ``tqdm.contrib.itertools``: Thin wrappers around ``itertools``
 - ``tqdm.contrib.concurrent``: Thin wrappers around ``concurrent.futures``
-- ``tqdm.contrib.discord``: Posts to `Discord <https://discord.com/>`__ bots
-- ``tqdm.contrib.telegram``: Posts to `Telegram <https://telegram.org/>`__ bots
+- ``tqdm.contrib.discord``: Posts to `Discord <https://discord.com>`__ bots
+- ``tqdm.contrib.telegram``: Posts to `Telegram <https://telegram.org>`__ bots
 - ``tqdm.contrib.bells``: Automagically enables all optional features
 
   * ``auto``, ``pandas``, ``discord``, ``telegram``
@@ -875,6 +880,7 @@ Here's an example with ``urllib``:
 
     import urllib, os
     from tqdm import tqdm
+    urllib = getattr(urllib, 'request', urllib)
 
     class TqdmUpTo(tqdm):
         """Provides `update_to(n)` which uses `tqdm.update(delta_n)`."""
@@ -936,12 +942,14 @@ down to:
     from tqdm import tqdm
 
     eg_link = "https://caspersci.uk.to/matryoshka.zip"
+    response = getattr(urllib, 'request', urllib).urlopen(eg_link)
     with tqdm.wrapattr(open(os.devnull, "wb"), "write",
-                       miniters=1, desc=eg_link.split('/')[-1]) as fout:
-        for chunk in urllib.urlopen(eg_link):
+                       miniters=1, desc=eg_link.split('/')[-1],
+                       total=getattr(response, 'length', None)) as fout:
+        for chunk in response:
             fout.write(chunk)
 
-The ``requests`` equivalent is nearly identical, albeit with a ``total``:
+The ``requests`` equivalent is nearly identical:
 
 .. code:: python
 
@@ -1042,6 +1050,24 @@ A ``keras`` callback is also available:
     ...
 
     model.fit(..., verbose=0, callbacks=[TqdmCallback()])
+
+Dask Integration
+~~~~~~~~~~~~~~~~
+
+A ``dask`` callback is also available:
+
+.. code:: python
+
+    from tqdm.dask import TqdmCallback
+
+    with TqdmCallback(desc="compute"):
+        ...
+        arr.compute()
+
+    # or use callback globally
+    cb = TqdmCallback(desc="global")
+    cb.register()
+    arr.compute()
 
 IPython/Jupyter Integration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1295,6 +1321,33 @@ A reusable canonical example is given below:
     # After the `with`, printing is restored
     print("Done!")
 
+Redirecting ``logging``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Similar to ``sys.stdout``/``sys.stderr`` as detailed above, console ``logging``
+may also be redirected to ``tqdm.write()``.
+
+Warning: if also redirecting ``sys.stdout``/``sys.stderr``, make sure to
+redirect ``logging`` first if needed.
+
+Helper methods are available in ``tqdm.contrib.logging``. For example:
+
+.. code:: python
+
+    import logging
+    from tqdm import trange
+    from tqdm.contrib.logging import logging_redirect_tqdm
+
+    LOG = logging.getLogger(__name__)
+
+    if __name__ == '__main__':
+        logging.basicConfig(level=logging.INFO)
+        with logging_redirect_tqdm():
+            for i in trange(9):
+                if i == 4:
+                    LOG.info("console logging redirected to `tqdm.write()`")
+        # logging restored
+
 Monitoring thread, intervals and miniters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1380,11 +1433,11 @@ Citation information: |DOI|
 
 |README-Hits| (Since 19 May 2016)
 
-.. |Logo| image:: https://raw.githubusercontent.com/tqdm/tqdm/master/images/logo.gif
-.. |Screenshot| image:: https://raw.githubusercontent.com/tqdm/img/master/tqdm.gif
-.. |Video| image:: https://raw.githubusercontent.com/tqdm/img/master/video.jpg
+.. |Logo| image:: https://img.tqdm.ml/logo.gif
+.. |Screenshot| image:: https://img.tqdm.ml/tqdm.gif
+.. |Video| image:: https://img.tqdm.ml/video.jpg
    :target: https://tqdm.github.io/video
-.. |Slides| image:: https://raw.githubusercontent.com/tqdm/img/master/slides.jpg
+.. |Slides| image:: https://img.tqdm.ml/slides.jpg
    :target: https://tqdm.github.io/PyData2019/slides.html
 .. |Build-Status| image:: https://img.shields.io/github/workflow/status/tqdm/tqdm/Test/master?logo=GitHub
    :target: https://github.com/tqdm/tqdm/actions?query=workflow%3ATest
@@ -1413,7 +1466,7 @@ Citation information: |DOI|
 .. |GitHub-Updated| image:: https://img.shields.io/github/last-commit/tqdm/tqdm/master.svg?logo=github&logoColor=white&label=pushed
    :target: https://github.com/tqdm/tqdm/pulse
 .. |Gift-Casper| image:: https://img.shields.io/badge/dynamic/json.svg?color=ff69b4&label=gifts%20received&prefix=%C2%A3&query=%24..sum&url=https%3A%2F%2Fcaspersci.uk.to%2Fgifts.json
-   :target: https://caspersci.uk.to/donate
+   :target: https://www.cdcl.ml/sponsor
 .. |Versions| image:: https://img.shields.io/pypi/v/tqdm.svg
    :target: https://tqdm.github.io/releases
 .. |PyPI-Downloads| image:: https://img.shields.io/pypi/dm/tqdm.svg?label=pypi%20downloads&logo=PyPI&logoColor=white
@@ -1440,8 +1493,8 @@ Citation information: |DOI|
    :target: https://doi.org/10.5281/zenodo.595120
 .. |binder-demo| image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/tqdm/tqdm/master?filepath=DEMO.ipynb
-.. |Screenshot-Jupyter1| image:: https://raw.githubusercontent.com/tqdm/img/master/jupyter-1.gif
-.. |Screenshot-Jupyter2| image:: https://raw.githubusercontent.com/tqdm/img/master/jupyter-2.gif
-.. |Screenshot-Jupyter3| image:: https://raw.githubusercontent.com/tqdm/img/master/jupyter-3.gif
-.. |README-Hits| image:: https://caspersci.uk.to/cgi-bin/hits.cgi?q=tqdm&style=social&r=https://github.com/tqdm/tqdm&l=https://caspersci.uk.to/images/tqdm.png&f=https://raw.githubusercontent.com/tqdm/tqdm/master/images/logo.gif
-   :target: https://caspersci.uk.to/cgi-bin/hits.cgi?q=tqdm&a=plot&r=https://github.com/tqdm/tqdm&l=https://caspersci.uk.to/images/tqdm.png&f=https://raw.githubusercontent.com/tqdm/tqdm/master/images/logo.gif&style=social
+.. |Screenshot-Jupyter1| image:: https://img.tqdm.ml/jupyter-1.gif
+.. |Screenshot-Jupyter2| image:: https://img.tqdm.ml/jupyter-2.gif
+.. |Screenshot-Jupyter3| image:: https://img.tqdm.ml/jupyter-3.gif
+.. |README-Hits| image:: https://caspersci.uk.to/cgi-bin/hits.cgi?q=tqdm&style=social&r=https://github.com/tqdm/tqdm&l=https://img.tqdm.ml/favicon.png&f=https://img.tqdm.ml/logo.gif
+   :target: https://caspersci.uk.to/cgi-bin/hits.cgi?q=tqdm&a=plot&r=https://github.com/tqdm/tqdm&l=https://img.tqdm.ml/favicon.png&f=https://img.tqdm.ml/logo.gif&style=social

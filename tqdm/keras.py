@@ -17,7 +17,7 @@ __all__ = ['TqdmCallback']
 
 
 class TqdmCallback(keras.callbacks.Callback):
-    """`keras` callback for epoch and batch progress"""
+    """Keras callback for epoch and batch progress."""
     @staticmethod
     def bar2callback(bar, pop=None, delta=(lambda logs: 1)):
         def callback(_, logs=None):
@@ -45,7 +45,7 @@ class TqdmCallback(keras.callbacks.Callback):
             0: epoch, 1: batch (transient), 2: batch. [default: 1].
             Will be set to `0` unless both `data_size` and `batch_size`
             are given.
-        tqdm_class : optional
+        tqdm_class  : optional
             `tqdm` class to use for bars [default: `tqdm.auto.tqdm`].
         tqdm_kwargs  : optional
             Any other arguments used for all bars.
@@ -69,10 +69,13 @@ class TqdmCallback(keras.callbacks.Callback):
     def on_train_begin(self, *_, **__):
         params = self.params.get
         auto_total = params('epochs', params('nb_epoch', None))
-        if auto_total is not None:
+        if auto_total is not None and auto_total != self.epoch_bar.total:
             self.epoch_bar.reset(total=auto_total)
 
-    def on_epoch_begin(self, *_, **__):
+    def on_epoch_begin(self, epoch, *_, **__):
+        if self.epoch_bar.n < epoch:
+            ebar = self.epoch_bar
+            ebar.n = ebar.last_print_n = ebar.initial = epoch
         if self.verbose:
             params = self.params.get
             total = params('samples', params(
@@ -98,7 +101,7 @@ class TqdmCallback(keras.callbacks.Callback):
         self.epoch_bar.close()
 
     def display(self):
-        """displays in the current cell in Notebooks"""
+        """Displays in the current cell in Notebooks."""
         container = getattr(self.epoch_bar, 'container', None)
         if container is None:
             return

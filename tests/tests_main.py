@@ -1,6 +1,6 @@
 """Test CLI usage."""
 import logging
-import subprocess
+import subprocess  # nosec
 import sys
 from functools import wraps
 from os import linesep
@@ -34,9 +34,9 @@ def norm(bytestr):
 @mark.slow
 def test_pipes():
     """Test command line pipes"""
-    ls_out = subprocess.check_output(['ls'])
-    ls = subprocess.Popen(['ls'], stdout=subprocess.PIPE)
-    res = subprocess.Popen(
+    ls_out = subprocess.check_output(['ls'])  # nosec
+    ls = subprocess.Popen(['ls'], stdout=subprocess.PIPE)  # nosec
+    res = subprocess.Popen(  # nosec
         [sys.executable, '-c', 'from tqdm.cli import main; main()'],
         stdin=ls.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = res.communicate()
@@ -61,7 +61,7 @@ def test_main_import():
     sys.argv = ['', '--desc', 'Test CLI import',
                 '--ascii', 'True', '--unit_scale', 'True']
     try:
-        import tqdm.__main__  # NOQA
+        import tqdm.__main__  # NOQA, pylint: disable=unused-variable
     finally:
         sys.stdin, sys.argv = _SYS
 

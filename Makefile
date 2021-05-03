@@ -10,6 +10,7 @@
 	test
 	pytest
 	testsetup
+	testnb
 	testcoverage
 	testperf
 	testtimer
@@ -18,7 +19,7 @@
 	prebuildclean
 	clean
 	toxclean
-	installdev
+	install_dev
 	install
 	build
 	buildupload
@@ -59,9 +60,13 @@ testsetup:
 	python setup.py check --metadata --restructuredtext --strict
 	python setup.py make none
 
+testnb:
+	pytest tests_notebook.ipynb --nbval --current-env -W=ignore --sanitize-with=setup.cfg --cov=tqdm.notebook --cov-report=term
+
 testcoverage:
 	@make coverclean
-	pytest -k "not perf" --cov=tqdm --cov-report=xml --cov-report=term --cov-fail-under=80
+	pytest tests_notebook.ipynb --cov=tqdm --cov-report= --nbval --current-env --sanitize-with=setup.cfg -W=ignore
+	pytest -k "not perf" --cov=tqdm --cov-report=xml --cov-report=term --cov-append --cov-fail-under=80
 
 testperf:
 	# do not use coverage (which is extremely slow)
@@ -107,6 +112,9 @@ snapcraft.yaml: .meta/mksnap.py
 .dockerignore:
 	@+python -c "fd=open('.dockerignore', 'w'); fd.write('*\n!dist/*.whl\n')"
 
+Dockerfile:
+	@+python -c 'fd=open("Dockerfile", "w"); fd.write("FROM python:3.8-alpine\nCOPY dist/*.whl .\nRUN pip install -U $$(ls ./*.whl) && rm ./*.whl\nENTRYPOINT [\"tqdm\"]\n")'
+
 distclean:
 	@+make coverclean
 	@+make prebuildclean
@@ -136,9 +144,6 @@ toxclean:
 	@+python -c "import shutil; shutil.rmtree('.tox', True)"
 
 
-installdev:
-	python setup.py develop --uninstall
-	python setup.py develop
 submodules:
 	git clone git@github.com:tqdm/tqdm.wiki wiki
 	git clone git@github.com:tqdm/tqdm.github.io docs
@@ -147,6 +152,13 @@ submodules:
 
 install:
 	python setup.py install
+install_dev:
+	python setup.py develop --uninstall
+	python setup.py develop
+install_build:
+	python -m pip install -r .meta/requirements-dev.txt
+install_test:
+	python -m pip install -r .meta/requirements-test.txt
 
 build:
 	@make prebuildclean
@@ -167,6 +179,7 @@ snap:
 docker:
 	@make build
 	@make .dockerignore
+	@make Dockerfile
 	docker build . -t tqdm/tqdm
 	docker tag tqdm/tqdm:latest tqdm/tqdm:$(shell docker run -i --rm tqdm/tqdm -v)
 none:
